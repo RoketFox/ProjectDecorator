@@ -67,7 +67,7 @@ public class CameraController : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         transform.position = neckPos.position;
 
