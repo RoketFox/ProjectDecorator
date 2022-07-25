@@ -9,6 +9,7 @@ public class FPController : MonoBehaviour
     #region Variables
 
     [SerializeField] private CapsuleCollider skinCollider;
+    private CapsuleCollider capsColl;
 
     [SerializeField] private Transform CamPos;
     private Vector3 standCamPos ;
@@ -26,6 +27,7 @@ public class FPController : MonoBehaviour
     [Header("Physics")]
     [SerializeField] private float groundDrag = 0f;
     [SerializeField] private float airDrag    = 0f;
+    private Rigidbody rb;
 
     [Header("Move")]
     [SerializeField, ReadOnly] private float limitSpeed;
@@ -40,19 +42,22 @@ public class FPController : MonoBehaviour
 
     [Header("Jump")]
     [SerializeField] private float jumpForce = 5f;
-    bool isReadyToJump;
+    private bool isReadyToJump;
 
     [Header("Ground")]
     [SerializeField, ReadOnly] bool isGrounded;
-    [SerializeField] private float checkOffset = .1f;
-    [SerializeField] private float stepOffset  = .5f;
-    [SerializeField] private float stepHeight  = .01f;
     [SerializeField] private LayerMask groundMask;
 
+    [Header("Step system")]
+    [SerializeField] private float lowerOffset = .1f;
+    [SerializeField] private float lowerLength = .1f;
+    [SerializeField] private float higherOffset  = .5f;
+    [SerializeField] private float higherLength = .1f;
+    [SerializeField] private float liftingHeight  = .01f;
+    public bool lift = false;
+
     private InputMaster controller;
-    Vector2 movInpVec;
-    private Rigidbody rb;
-    private CapsuleCollider capsColl;
+    private Vector2 movInpVec;
     #endregion
 
     #region Standart voids
@@ -101,14 +106,35 @@ public class FPController : MonoBehaviour
         skinColliderCalculate();
 
         GroundedCalculate();
-        if (movInpVec != Vector2.zero) StepHelper();
 
-        Movement();
         SpeedLimiter();
+
+        lift = false;
+        StepRaycaster(transform.forward * movInpVec.y);
+        StepRaycaster(transform.right * movInpVec.x);
+        StepRaycaster((transform.forward + transform.right) * SignZero(movInpVec.x + movInpVec.y));
+        StepRaycaster((transform.forward + -transform.right) * SignZero(-movInpVec.x + movInpVec.y));
+        if (lift)
+            rb.AddForce(transform.up * liftingHeight, ForceMode.Force);
+
+        Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), transform.right * movInpVec.x, Color.red, 0);
+        Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), transform.forward * movInpVec.y, Color.blue, 0);
+        Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0),
+            (transform.forward + transform.right) * SignZero(movInpVec.x + movInpVec.y), Color.yellow, 0);
+        Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0),
+            (transform.forward + -transform.right) * SignZero(-movInpVec.x + movInpVec.y), Color.green, 0);
+
+
+        
 
         DragController();
 
         Crouch();
+    }
+
+    private void FixedUpdate()
+    {
+        Movement();
     }
     #endregion
 
@@ -145,7 +171,7 @@ public class FPController : MonoBehaviour
 
     private void Crouch_performed(InputAction.CallbackContext ctx)
     {
-        if (holdForRun)
+        if (holdForCrouch)
             isCrouching = true;
         else
             isCrouching = !isCrouching;
@@ -153,7 +179,7 @@ public class FPController : MonoBehaviour
 
     private void Crouch_canceled(InputAction.CallbackContext ctx)
     {
-        if (holdForRun)
+        if (holdForCrouch)
             isCrouching = false;
     }
     #endregion
@@ -165,7 +191,7 @@ public class FPController : MonoBehaviour
 
         SpeedCalculate();
 
-        rb.AddForce(moveDir * limitSpeed, ForceMode.Force);
+        rb.AddForce(moveDir * limitSpeed, ForceMode.Acceleration);
     }
 
     private void Crouch()
@@ -203,19 +229,29 @@ public class FPController : MonoBehaviour
             rb.drag = airDrag;
     }
 
-    private void StepHelper()
+    private void StepRaycaster(Vector3 direction)
     {
-        if (Physics.Raycast(transform.position - new Vector3(0, currHeight * 0.5f - checkOffset, 0), transform.forward, currRadius + 0.1f, groundMask))
+        if (Physics.Raycast(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), direction, currRadius + lowerLength, groundMask))
         {
-            if (!Physics.Raycast(transform.position - new Vector3(0, currHeight * 0.5f - stepOffset, 0), transform.forward, currRadius + 0.2f, groundMask))
+            if (!Physics.Raycast(transform.position - new Vector3(0, normalHeight * 0.5f - higherOffset, 0), direction, currRadius + higherLength, groundMask))
             {
-                transform.position += new Vector3(0, stepHeight, 0);
+                lift = true; 
             }
         }
     }
+
     #endregion
 
     #region Calculators
+    private void GroundedCalculate()
+    {
+        RaycastHit hit;
+        if (Physics.SphereCast(transform.position, currRadius, Vector3.down, out hit, normalHeight * 0.5f - currRadius + 0.2f, groundMask))
+            isGrounded = true;
+        else
+            isGrounded = false;
+    }
+
     private void skinColliderCalculate()
     {
         skinCollider.center = capsColl.center;
@@ -252,13 +288,11 @@ public class FPController : MonoBehaviour
     #endregion
 
     #region Utilities
-    public void GroundedCalculate()
+    private int SignZero(float x)
     {
-        RaycastHit hit;
-        if (Physics.SphereCast(transform.position, currRadius, Vector3.down, out hit, currHeight * 0.5f - currRadius + 0.2f, groundMask))
-            isGrounded = true;
-        else
-            isGrounded = false;
+        if (x < 0) return -1;
+        else if (x > 0) return 1;
+        else return 0;
     }
     #endregion
 }
