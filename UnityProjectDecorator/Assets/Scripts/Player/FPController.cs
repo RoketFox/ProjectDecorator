@@ -8,12 +8,11 @@ public class FPController : MonoBehaviour
 {
     #region Variables
 
+    [Header("Objects")]
     [SerializeField] private CapsuleCollider skinCollider;
     private CapsuleCollider capsColl;
 
     [SerializeField] private Transform CamPos;
-    private Vector3 standCamPos ;
-    private Vector3 crouchCamPos;
 
     [Header("Player info")]
     [SerializeField, ReadOnly] private float currHeight;
@@ -32,12 +31,16 @@ public class FPController : MonoBehaviour
     [Header("Move")]
     [SerializeField, ReadOnly] private float limitSpeed;
     [SerializeField] private float moveSpeed    = 20f;
-    [SerializeField] private float runSpeed     = 30f;
-    [SerializeField] private float crouchSpeed  = 10f;
     [SerializeField] private float airSpeed     = 10f;
+    [SerializeField] private float runSpeed     = 30f;
     [SerializeField] private bool holdForRun    = false;
-    [SerializeField] private bool holdForCrouch = false;
     private bool isRuning    = false;
+    [SerializeField] private float crouchSpeed  = 10f;
+    [SerializeField] private float camToCrouchSpeed = 2;
+    [SerializeField] private float standCamOffset;
+    [SerializeField] private float crouchCamOffset;
+    private Vector3 currCamPos;
+    [SerializeField] private bool holdForCrouch = false;
     private bool isCrouching = false;
 
     [Header("Jump")]
@@ -76,8 +79,7 @@ public class FPController : MonoBehaviour
         controller.Player.Crouch.performed += Crouch_performed;
         controller.Player.Crouch.canceled += Crouch_canceled;
 
-        standCamPos = CamPos.localPosition;
-        crouchCamPos = CamPos.localPosition - new Vector3(0 ,0.5f ,0);
+        currCamPos = new Vector3(0, standCamOffset, 0);
 
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
@@ -134,6 +136,8 @@ public class FPController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        CamPos.localPosition = Vector3.Lerp(CamPos.localPosition, currCamPos, camToCrouchSpeed * Time.deltaTime);
+
         Movement();
     }
     #endregion
@@ -173,13 +177,13 @@ public class FPController : MonoBehaviour
     {
         if (holdForCrouch)
             isCrouching = true;
-        else
+        else if (CanStand())
             isCrouching = !isCrouching;
     }
 
     private void Crouch_canceled(InputAction.CallbackContext ctx)
     {
-        if (holdForCrouch)
+        if (holdForCrouch && CanStand())
             isCrouching = false;
     }
     #endregion
@@ -201,15 +205,23 @@ public class FPController : MonoBehaviour
             capsColl.height = crouchHeight;
             capsColl.radius = crouchRadius;
             capsColl.center = new Vector3(0, -0.5f, 0);
-            CamPos.localPosition = crouchCamPos;
+            currCamPos = new Vector3(0, crouchCamOffset, 0);
         }
         else
         {
             capsColl.height = normalHeight;
             capsColl.radius = normalRadius;
             capsColl.center = Vector3.zero;
-            CamPos.localPosition = standCamPos;
+            currCamPos = new Vector3(0, standCamOffset, 0);
         }
+    }
+
+    private bool CanStand()
+    {
+        if (!Physics.Raycast(transform.position, transform.up, 1))
+            return true;
+        else
+            return false;
     }
 
     private void Jump()

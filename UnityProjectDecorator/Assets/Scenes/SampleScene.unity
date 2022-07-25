@@ -535,26 +535,29 @@ MonoBehaviour:
   normalHeight: 2
   normalRadius: 0.5
   crouchHeight: 1
-  crouchRadius: 0.4
+  crouchRadius: 0.49
   groundDrag: 5
   airDrag: 2
   limitSpeed: 0
   moveSpeed: 20
-  runSpeed: 30
-  crouchSpeed: 10
   airSpeed: 5
+  runSpeed: 30
   holdForRun: 1
+  crouchSpeed: 10
+  camToCrouchSpeed: 5
+  standCamOffset: 0.6
+  crouchCamOffset: -0.1
   holdForCrouch: 0
   jumpForce: 5
   isGrounded: 0
   groundMask:
     serializedVersion: 2
     m_Bits: 8
-  lowerOffset: 0.1
+  lowerOffset: 0.01
   lowerLength: 0.2
   higherOffset: 0.5
   higherLength: 0.5
-  liftingHeight: 20
+  liftingHeight: 10
   lift: 0
 --- !u!54 &272372498
 Rigidbody:
@@ -2414,7 +2417,7 @@ PrefabInstance:
     - target: {fileID: 8642225304373351647, guid: 50a0925b0c22af146a2d15615f815a1c,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.875
+      value: 1.849
       objectReference: {fileID: 0}
     - target: {fileID: 8642225304373351647, guid: 50a0925b0c22af146a2d15615f815a1c,
         type: 3}
