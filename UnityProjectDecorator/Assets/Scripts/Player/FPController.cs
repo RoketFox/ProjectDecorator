@@ -7,39 +7,40 @@ using UnityEngine.InputSystem;
 public class FPController : MonoBehaviour
 {
     #region Variables
-
-    [Header("Objects")]
-    [SerializeField] private CapsuleCollider skinCollider;
-    private CapsuleCollider capsColl;
-
-    [SerializeField] private Transform CamPos;
+    private InputMaster controller;
 
     [Header("Player info")]
+    [SerializeField] private CapsuleCollider skinCollider;
+    private CapsuleCollider capsColl;
     [SerializeField, ReadOnly] private float currHeight;
     [SerializeField, ReadOnly] private float currRadius;
-    [SerializeField, ReadOnly] private float mass;
     [SerializeField] private float normalHeight = 2;
     [SerializeField] private float normalRadius = .5f;
     [SerializeField] private float crouchHeight = 1;
-    [SerializeField] private float crouchRadius = .4f;
+    [SerializeField] private float crouchRadius = .49f;
+
+    [Header("Camera")]
+    [SerializeField] private Transform neck;
+    [SerializeField] private float standCamOffset  = .6f;
+    [SerializeField] private float crouchCamOffset = -.1f;
+    private Vector3 currCamPos;
+    [SerializeField] private float camToCrouchSpeed = 5;
 
     [Header("Physics")]
-    [SerializeField] private float groundDrag = 0f;
-    [SerializeField] private float airDrag    = 0f;
+    [SerializeField] private float groundDrag = 5f;
+    [SerializeField] private float airDrag    = 2f;
     private Rigidbody rb;
 
-    [Header("Move")]
-    [SerializeField, ReadOnly] private float limitSpeed;
+    [Header("Movement")]
+    [SerializeField] bool canMove = true;
+    private Vector2 movInpVec;
+    [SerializeField, ReadOnly] public float currentSpeed;
     [SerializeField] private float moveSpeed    = 20f;
-    [SerializeField] private float airSpeed     = 10f;
+    [SerializeField] private float airSpeed     = 5f;
     [SerializeField] private float runSpeed     = 30f;
     [SerializeField] private bool holdForRun    = false;
     private bool isRuning    = false;
     [SerializeField] private float crouchSpeed  = 10f;
-    [SerializeField] private float camToCrouchSpeed = 2;
-    [SerializeField] private float standCamOffset;
-    [SerializeField] private float crouchCamOffset;
-    private Vector3 currCamPos;
     [SerializeField] private bool holdForCrouch = false;
     private bool isCrouching = false;
 
@@ -52,15 +53,12 @@ public class FPController : MonoBehaviour
     [SerializeField] private LayerMask groundMask;
 
     [Header("Step system")]
-    [SerializeField] private float lowerOffset = .1f;
-    [SerializeField] private float lowerLength = .1f;
+    [SerializeField] private float lowerOffset   = .01f;
+    [SerializeField] private float lowerLength   = .2f;
     [SerializeField] private float higherOffset  = .5f;
-    [SerializeField] private float higherLength = .1f;
-    [SerializeField] private float liftingHeight  = .01f;
-    public bool lift = false;
-
-    private InputMaster controller;
-    private Vector2 movInpVec;
+    [SerializeField] private float higherLength  = .5f;
+    [SerializeField] private float liftingForce = 5f;
+    private bool lift = false;
     #endregion
 
     #region Standart voids
@@ -77,9 +75,7 @@ public class FPController : MonoBehaviour
         controller.Player.Run.canceled  += Run_canceled;
 
         controller.Player.Crouch.performed += Crouch_performed;
-        controller.Player.Crouch.canceled += Crouch_canceled;
-
-        currCamPos = new Vector3(0, standCamOffset, 0);
+        controller.Player.Crouch.canceled  += Crouch_canceled;
 
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
@@ -99,25 +95,17 @@ public class FPController : MonoBehaviour
 
     private void Start()
     {
+
     }
 
     private void Update()
     {
-        currHeight = capsColl.height;
-        currRadius = capsColl.radius;
         skinColliderCalculate();
 
         GroundedCalculate();
 
         SpeedLimiter();
 
-        lift = false;
-        StepRaycaster(transform.forward * movInpVec.y);
-        StepRaycaster(transform.right * movInpVec.x);
-        StepRaycaster((transform.forward + transform.right) * SignZero(movInpVec.x + movInpVec.y));
-        StepRaycaster((transform.forward + -transform.right) * SignZero(-movInpVec.x + movInpVec.y));
-        if (lift)
-            rb.AddForce(transform.up * liftingHeight, ForceMode.Force);
 
         Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), transform.right * movInpVec.x, Color.red, 0);
         Debug.DrawRay(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), transform.forward * movInpVec.y, Color.blue, 0);
@@ -127,8 +115,6 @@ public class FPController : MonoBehaviour
             (transform.forward + -transform.right) * SignZero(-movInpVec.x + movInpVec.y), Color.green, 0);
 
 
-        
-
         DragController();
 
         Crouch();
@@ -136,13 +122,23 @@ public class FPController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        CamPos.localPosition = Vector3.Lerp(CamPos.localPosition, currCamPos, camToCrouchSpeed * Time.deltaTime);
+        neck.localPosition = Vector3.Lerp(neck.localPosition, currCamPos, camToCrouchSpeed * Time.deltaTime);
 
-        Movement();
+        lift = false;
+        StepRaycaster(transform.forward * movInpVec.y);
+        StepRaycaster(transform.right * movInpVec.x);
+        StepRaycaster((transform.forward + transform.right) * SignZero(movInpVec.x + movInpVec.y));
+        StepRaycaster((transform.forward + -transform.right) * SignZero(-movInpVec.x + movInpVec.y));
+        if (lift)
+            rb.AddForce(transform.up * liftingForce, ForceMode.Force);
+
+        if (canMove)
+            Movement();
     }
     #endregion
 
     #region Input Actions
+
     private void Movement_performed(InputAction.CallbackContext ctx)
     {
         movInpVec = ctx.ReadValue<Vector2>();
@@ -195,7 +191,7 @@ public class FPController : MonoBehaviour
 
         SpeedCalculate();
 
-        rb.AddForce(moveDir * limitSpeed, ForceMode.Acceleration);
+        rb.AddForce(moveDir * currentSpeed, ForceMode.Acceleration);
     }
 
     private void Crouch()
@@ -243,6 +239,7 @@ public class FPController : MonoBehaviour
 
     private void StepRaycaster(Vector3 direction)
     {
+        currRadius = capsColl.radius;
         if (Physics.Raycast(transform.position - new Vector3(0, normalHeight * 0.5f - lowerOffset, 0), direction, currRadius + lowerLength, groundMask))
         {
             if (!Physics.Raycast(transform.position - new Vector3(0, normalHeight * 0.5f - higherOffset, 0), direction, currRadius + higherLength, groundMask))
@@ -275,24 +272,29 @@ public class FPController : MonoBehaviour
     {
         if (isGrounded)
         {
-            if (isCrouching)
-                limitSpeed = crouchSpeed;
-            else if (isRuning)
-                limitSpeed = runSpeed;
+            if (movInpVec != new Vector2(0, 0))
+            {
+                if (isCrouching)
+                    currentSpeed = crouchSpeed;
+                else if (isRuning)
+                    currentSpeed = runSpeed;
+                else
+                    currentSpeed = moveSpeed;
+            }
             else
-                limitSpeed = moveSpeed;
+                currentSpeed = 0;
         }
         else
-            limitSpeed = airSpeed;
+            currentSpeed = airSpeed;
     }
 
     private void SpeedLimiter()
     {
         Vector3 pVelocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
 
-        if (pVelocity.magnitude > limitSpeed)
+        if (pVelocity.magnitude > currentSpeed)
         {
-            Vector3 limitVelocity = pVelocity.normalized * limitSpeed;
+            Vector3 limitVelocity = pVelocity.normalized * currentSpeed;
             rb.velocity = new Vector3(limitVelocity.x, rb.velocity.y, limitVelocity.z);
         }
     }
