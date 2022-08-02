@@ -5,8 +5,7 @@ using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
-    public enum HeadbobStates {idle, walk, run, crouch}
-    public HeadbobStates currHbState = HeadbobStates.idle;
+    public enum HeadbobStates { idle, walk, run, crouch }
 
     [Header("Preferences")]
     [SerializeField] private bool cursorLocked     = true;
@@ -19,15 +18,16 @@ public class CameraController : MonoBehaviour
     [SerializeField] private float stabilization  = 0.2f;
 
     [Header("HeadBob")]
+    [ReadOnly] public HeadbobStates currHbState = HeadbobStates.idle;
     [SerializeField] private bool headbobEnabled = true;
     [SerializeField, ReadOnly] private float currAmplitude = 0;
     [SerializeField, ReadOnly] private float currFrequency = 0;
-    [SerializeField] private float walkAmplitude   = 1f;
-    [SerializeField] private float walkFrequency   = 2f;
-    [SerializeField] private float runAmplitude    = 1f;
-    [SerializeField] private float runFrequency    = 2f;
-    [SerializeField] private float crouchAmplitude = 1f;
-    [SerializeField] private float crouchFrequency = 2f;
+    [SerializeField] private float walkAmplitude   = 0.5f;
+    [SerializeField] private float walkFrequency   = 13f;
+    [SerializeField] private float runAmplitude    = 0.7f;
+    [SerializeField] private float runFrequency    = 20f;
+    [SerializeField] private float crouchAmplitude = 0.5f;
+    [SerializeField] private float crouchFrequency = 6f;
     private Vector3 startPos;
     private Vector3 camPos = Vector3.zero;
 

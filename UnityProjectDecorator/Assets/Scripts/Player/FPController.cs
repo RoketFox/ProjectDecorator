@@ -15,15 +15,15 @@ public class FPController : MonoBehaviour
     [SerializeField, ReadOnly] private float currHeight;
     [SerializeField, ReadOnly] private float currRadius;
     [SerializeField] private float normalHeight = 2;
-    [SerializeField] private float normalRadius = .5f;
+    [SerializeField] private float normalRadius = 0.5f;
     [SerializeField] private float crouchHeight = 1;
-    [SerializeField] private float crouchRadius = .49f;
+    [SerializeField] private float crouchRadius = 0.49f;
 
     [Header("Camera")]
     [SerializeField] private CameraController camController;
     [SerializeField] private Transform neck;
-    [SerializeField] private float standCamOffset  = .6f;
-    [SerializeField] private float crouchCamOffset = -.1f;
+    [SerializeField] private float standCamOffset  = 0.6f;
+    [SerializeField] private float crouchCamOffset = -0.1f;
     private Vector3 currCamPos;
     [SerializeField] private float camToCrouchSpeed = 5;
 
@@ -36,7 +36,7 @@ public class FPController : MonoBehaviour
     [SerializeField] bool movementEnabled = true;
     private Vector2 movInpVec;
     [SerializeField, ReadOnly] public float currentSpeed;
-    [SerializeField] private float walkSpeed    = 20f;
+    [SerializeField] private float walkSpeed    = 15f;
     [SerializeField] private float airSpeed     = 5f;
     [SerializeField] private float runSpeed     = 30f;
     [SerializeField] private bool holdForRun    = false;
@@ -54,11 +54,11 @@ public class FPController : MonoBehaviour
     [SerializeField] private LayerMask groundMask;
 
     [Header("Step system")]
-    [SerializeField] private float lowerOffset   = .01f;
-    [SerializeField] private float lowerLength   = .2f;
-    [SerializeField] private float higherOffset  = .5f;
-    [SerializeField] private float higherLength  = .5f;
-    [SerializeField] private float liftingForce  = 10f;
+    [SerializeField] private float lowerOffset   = 0.02f;
+    [SerializeField] private float lowerLength   = 0.2f;
+    [SerializeField] private float higherOffset  = 0.5f;
+    [SerializeField] private float higherLength  = 0.5f;
+    [SerializeField] private float liftingForce  = 13f;
     private bool lift = false;
     #endregion
 
@@ -286,29 +286,34 @@ public class FPController : MonoBehaviour
                 if (isCrouching)
                 {
                     currentSpeed = crouchSpeed;
-                    camController.currHbState = CameraController.HeadbobStates.crouch;
+                    if (camController != null)
+                        camController.currHbState = CameraController.HeadbobStates.crouch;
                 }
                 else if (isRuning)
                 {
                     currentSpeed = runSpeed;
-                    camController.currHbState = CameraController.HeadbobStates.run;
+                    if (camController != null)
+                        camController.currHbState = CameraController.HeadbobStates.run;
                 }
                 else
                 {
                     currentSpeed = walkSpeed;
-                    camController.currHbState = CameraController.HeadbobStates.walk;
+                    if (camController != null)
+                        camController.currHbState = CameraController.HeadbobStates.walk;
                 }
             }
             else
             {
                 currentSpeed = 0;
-                camController.currHbState = CameraController.HeadbobStates.idle;
+                if (camController != null)
+                    camController.currHbState = CameraController.HeadbobStates.idle;
             }
         }
         else
         {
             currentSpeed = airSpeed;
-            camController.currHbState = CameraController.HeadbobStates.idle;
+            if (camController != null)
+                camController.currHbState = CameraController.HeadbobStates.idle;
         }
     }
 
