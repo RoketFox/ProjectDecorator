@@ -20,6 +20,7 @@ public class FPController : MonoBehaviour
     [SerializeField] private float crouchRadius = .49f;
 
     [Header("Camera")]
+    [SerializeField] private CameraController camController;
     [SerializeField] private Transform neck;
     [SerializeField] private float standCamOffset  = .6f;
     [SerializeField] private float crouchCamOffset = -.1f;
@@ -32,10 +33,10 @@ public class FPController : MonoBehaviour
     private Rigidbody rb;
 
     [Header("Movement")]
-    [SerializeField] bool canMove = true;
+    [SerializeField] bool movementEnabled = true;
     private Vector2 movInpVec;
     [SerializeField, ReadOnly] public float currentSpeed;
-    [SerializeField] private float moveSpeed    = 20f;
+    [SerializeField] private float walkSpeed    = 20f;
     [SerializeField] private float airSpeed     = 5f;
     [SerializeField] private float runSpeed     = 30f;
     [SerializeField] private bool holdForRun    = false;
@@ -57,7 +58,7 @@ public class FPController : MonoBehaviour
     [SerializeField] private float lowerLength   = .2f;
     [SerializeField] private float higherOffset  = .5f;
     [SerializeField] private float higherLength  = .5f;
-    [SerializeField] private float liftingForce = 5f;
+    [SerializeField] private float liftingForce  = 10f;
     private bool lift = false;
     #endregion
 
@@ -122,7 +123,10 @@ public class FPController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        neck.localPosition = Vector3.Lerp(neck.localPosition, currCamPos, camToCrouchSpeed * Time.deltaTime);
+        if (neck != null)
+            neck.localPosition = Vector3.Lerp(neck.localPosition, currCamPos, camToCrouchSpeed * Time.deltaTime);
+        else
+            Debug.LogWarning("There is no neck on ur player");
 
         lift = false;
         StepRaycaster(transform.forward * movInpVec.y);
@@ -132,7 +136,7 @@ public class FPController : MonoBehaviour
         if (lift)
             rb.AddForce(transform.up * liftingForce, ForceMode.Force);
 
-        if (canMove)
+        if (movementEnabled)
             Movement();
     }
     #endregion
@@ -263,9 +267,14 @@ public class FPController : MonoBehaviour
 
     private void skinColliderCalculate()
     {
-        skinCollider.center = capsColl.center;
-        skinCollider.height = capsColl.height - .05f;
-        skinCollider.radius = capsColl.radius + .01f;
+        if (skinCollider != null)
+        {
+            skinCollider.center = capsColl.center;
+            skinCollider.height = capsColl.height - .05f;
+            skinCollider.radius = capsColl.radius + .01f;
+        }
+        else
+            Debug.LogWarning("There is no skinCollider on ur player");
     }
 
     private void SpeedCalculate()
@@ -275,17 +284,32 @@ public class FPController : MonoBehaviour
             if (movInpVec != new Vector2(0, 0))
             {
                 if (isCrouching)
+                {
                     currentSpeed = crouchSpeed;
+                    camController.currHbState = CameraController.HeadbobStates.crouch;
+                }
                 else if (isRuning)
+                {
                     currentSpeed = runSpeed;
+                    camController.currHbState = CameraController.HeadbobStates.run;
+                }
                 else
-                    currentSpeed = moveSpeed;
+                {
+                    currentSpeed = walkSpeed;
+                    camController.currHbState = CameraController.HeadbobStates.walk;
+                }
             }
             else
+            {
                 currentSpeed = 0;
+                camController.currHbState = CameraController.HeadbobStates.idle;
+            }
         }
         else
+        {
             currentSpeed = airSpeed;
+            camController.currHbState = CameraController.HeadbobStates.idle;
+        }
     }
 
     private void SpeedLimiter()

@@ -534,15 +534,16 @@ MonoBehaviour:
   normalRadius: 0.5
   crouchHeight: 1
   crouchRadius: 0.49
+  camController: {fileID: 330585548}
   neck: {fileID: 1963003975}
   standCamOffset: 0.6
   crouchCamOffset: -0.1
   camToCrouchSpeed: 5
   groundDrag: 5
   airDrag: 2
-  canMove: 1
+  movementEnabled: 1
   currentSpeed: 0
-  moveSpeed: 20
+  walkSpeed: 20
   airSpeed: 5
   runSpeed: 30
   holdForRun: 1
@@ -553,11 +554,11 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 8
-  lowerOffset: 0.01
+  lowerOffset: 0.02
   lowerLength: 0.2
   higherOffset: 0.5
   higherLength: 0.5
-  liftingForce: 5
+  liftingForce: 13
 --- !u!54 &272372498
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -824,18 +825,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fc5f1639a20fe6745a38878473a5e517, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currHbState: 0
+  cursorLocked: 1
+  camRotateEnabled: 1
   head: {fileID: 543560146}
   body: {fileID: 272372493}
   neckPos: {fileID: 1963003975}
   rotationSpeedX: 0.3
   rotationSpeedY: 0.3
   stabilization: 0.2
-  walkAmplitude: 0.01
-  walkFrequency: 0.02
-  runAmplitude: 0.01
-  runFrequency: 0.02
-  crouchAmplitude: 0.01
-  crouchFrequency: 0.02
+  headbobEnabled: 1
+  currAmplitude: 0
+  currFrequency: 0
+  walkAmplitude: 0.5
+  walkFrequency: 15
+  runAmplitude: 0.7
+  runFrequency: 20
+  crouchAmplitude: 0.5
+  crouchFrequency: 5
 --- !u!4 &338976982 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1856478557988811146, guid: 466621a4836aa504c87c15d88722d465,
