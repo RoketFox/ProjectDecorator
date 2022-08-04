@@ -10,8 +10,8 @@ public class FPController : MonoBehaviour
     private InputMaster controller;
 
     [Header("Player info")]
-    [SerializeField] private CapsuleCollider skinCollider;
-    private CapsuleCollider capsColl;
+    [SerializeField] private CapsuleCollider skinCollider = null;
+    private CapsuleCollider capsColl = null;
     [SerializeField, ReadOnly] private float currHeight;
     [SerializeField, ReadOnly] private float currRadius;
     [SerializeField] private float normalHeight = 2;
@@ -20,8 +20,8 @@ public class FPController : MonoBehaviour
     [SerializeField] private float crouchRadius = 0.49f;
 
     [Header("Camera")]
-    [SerializeField] private CameraController camController;
-    [SerializeField] private Transform neck;
+    [SerializeField] private CameraController camController = null;
+    [SerializeField] private Transform neck = null;
     [SerializeField] private float standCamOffset  = 0.6f;
     [SerializeField] private float crouchCamOffset = -0.1f;
     private Vector3 currCamPos;
@@ -62,7 +62,18 @@ public class FPController : MonoBehaviour
     private bool lift = false;
     #endregion
 
+
     #region Standart voids
+    private void OnEnable()
+    {
+        controller.Player.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controller.Player.Disable();
+    }
+
     private void Awake()
     {
         controller = new InputMaster();
@@ -82,16 +93,6 @@ public class FPController : MonoBehaviour
         rb.freezeRotation = true;
         
         capsColl = GetComponent<CapsuleCollider>();
-    }
-
-    private void OnEnable()
-    {
-        controller.Player.Enable();
-    }
-
-    private void OnDisable()
-    {
-        controller.Player.Disable();
     }
 
     private void Start()

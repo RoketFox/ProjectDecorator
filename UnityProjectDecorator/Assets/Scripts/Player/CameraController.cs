@@ -5,14 +5,15 @@ using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
+    private InputMaster controller;
     public enum HeadbobStates { idle, walk, run, crouch }
 
     [Header("Preferences")]
     [SerializeField] private bool cursorLocked     = true;
     [SerializeField] private bool camRotateEnabled = true;
-    [SerializeField] private Transform head;
-    [SerializeField] private Transform body;
-    [SerializeField] private Transform neckPos;
+    [SerializeField] private Transform neckPos = null;
+    [SerializeField] private Transform head    = null;
+    [SerializeField] private Transform body    = null;
     [SerializeField] private float rotationSpeedX = 0.3f;
     [SerializeField] private float rotationSpeedY = 0.3f;
     [SerializeField] private float stabilization  = 0.2f;
@@ -36,27 +37,8 @@ public class CameraController : MonoBehaviour
     private float YRotation;
     private float _YRotation;
 
-    
-
-    private InputMaster controller;
-
-
-    
-    private void Awake()
-    {
-        startPos = transform.localPosition;
-
-        controller = new InputMaster();
-
-        controller.Player.Mouse.performed += Mouse_performed;
-        controller.Player.Mouse.canceled += Mouse_canceled;
-
-    }
     private void OnEnable()
     {
-        if (cursorLocked)
-            Cursor.lockState = CursorLockMode.Locked;
-
         controller.Player.Enable();
     }
 
@@ -65,6 +47,21 @@ public class CameraController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         controller.Player.Disable();
     }
+
+    private void Awake()
+    {
+        if (cursorLocked)
+            Cursor.lockState = CursorLockMode.Locked;
+
+        startPos = transform.localPosition;
+
+        controller = new InputMaster();
+
+        controller.Player.Mouse.performed += Mouse_performed;
+        controller.Player.Mouse.canceled += Mouse_canceled;
+
+    }
+    
     public void Mouse_performed(InputAction.CallbackContext ctx)
     {
         _XRotation = ctx.ReadValue<Vector2>().x;
