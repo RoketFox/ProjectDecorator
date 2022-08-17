@@ -10,23 +10,22 @@ public class PullandPush : MonoBehaviour
 
     [Header("Preferences")]
     [SerializeField] private Transform grabParentGo = null;
-    //[SerializeField] private bool fixedPosition     = false;
-    //[SerializeField] private Vector3 grabPosition   = Vector3.zero;
-    private GameObject grabBind = null;
-    private GameObject goAnchor = null;
-    private Rigidbody  anchorRb = null;
+    [SerializeField] private GameObject goAnchor = null;
+    private Rigidbody anchorRb = null;
     private ConfigurableJoint anchorJoint = null;
 
-    [Space]
-    [SerializeField] private GameObject pickBind  = null;
-    [SerializeField] private Transform pickParentGo = null;
-    [SerializeField] private Vector3 pickPosition = Vector3.zero;
-    [Space]
+    private GameObject grabBind = null;
+    //[Space]
+    //[SerializeField] private GameObject pickBind  = null;
+    //[SerializeField] private Transform pickParentGo = null;
+    //[SerializeField] private Vector3 pickPosition = Vector3.zero;
+    //[Space]
+
     [SerializeField] private float minDistance = 0.5f;
     [SerializeField] private float maxDistance = 3;
-    [SerializeField] private float force = 5;
-    [SerializeField] private Vector3 pickGoMaxSize = new Vector3(1, 1, 1);
-    [SerializeField] private float grabGoMaxMass = 1;
+    [SerializeField] private float pullForce = 300;
+    //[SerializeField] private Vector3 pickGoMaxSize = new Vector3(1, 1, 1);
+    //[SerializeField] private float grabGoMaxMass = 1;
 
     private Transform hitGo = null;
     private Rigidbody hitRb = null;
@@ -54,39 +53,6 @@ public class PullandPush : MonoBehaviour
 
     private void Grab_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
-        GrabRaycaster();
-    }
-
-    private void Grab_canceled(UnityEngine.InputSystem.InputAction.CallbackContext obj)
-    {
-        grabState = GrabState.free;
-        hitRb.useGravity = true;
-        hitRb = null;
-        anchorJoint.connectedBody = null;
-    }
-
-    void Start()
-    {
-        grabBind.transform.parent = grabParentGo;
-    }
-
-    void FixedUpdate()
-    {
-        switch (grabState)
-        {
-            case GrabState.free:
-                break;
-
-            case GrabState.grab:
-                if (Vector3.Distance(grabBind.transform.position, goAnchor.transform.position) > 0.1)
-                    goAnchor.GetComponent<Rigidbody>().AddForce((grabBind.transform.position - goAnchor.transform.position) * force, ForceMode.Acceleration);
-                
-                break;
-        }
-    }
-
-    private void GrabRaycaster()
-    {
         if (grabState == GrabState.free)
         {
             RaycastHit hit;
@@ -99,35 +65,60 @@ public class PullandPush : MonoBehaviour
 
                     float distanceToGo = (transform.position - hit.point).magnitude;
                     if (distanceToGo < minDistance) distanceToGo = minDistance;
-                    grabBind.transform.localPosition = Vector3.zero;
-                    grabBind.transform.localPosition = new Vector3(grabBind.transform.localPosition.x, grabBind.transform.localPosition.y, distanceToGo);
-                    //Debug.Log(Vector3.Scale(hitGo.GetComponent<MeshFilter>().mesh.bounds.size, hitGo.transform.lossyScale));
+
+                    grabBind.transform.localPosition = Vector3.forward * distanceToGo;
 
                     goAnchor.transform.position = hit.point;
                     anchorJoint.connectedBody = hitRb;
 
                     grabState = GrabState.grab;
                 }
+                else return;
             }
+        }
+    }
+
+    private void Grab_canceled(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        if (grabState == GrabState.grab)
+        {
+            grabState = GrabState.free;
+            hitGo = null;
+            hitRb = null;
+            anchorJoint.connectedBody = null;
+        }
+    }
+
+    void Start()
+    {
+
+    }
+
+    void FixedUpdate()
+    {
+        switch (grabState)
+        {
+            case GrabState.free:
+                break;
+
+            case GrabState.grab:
+                if (Vector3.Distance(grabBind.transform.position, goAnchor.transform.position) > 0.01)
+                    anchorRb.AddForce((grabBind.transform.position - goAnchor.transform.position) * pullForce, ForceMode.Force);
+                    //anchorJoint.transform.position = Vector3.Lerp(anchorJoint.transform.position, grabBind.transform.position, Time.time * pullForce);
+                break;
         }
     }
 
     private void GoCreator()
     {
-        goAnchor = new GameObject("goAnchor");
-        anchorJoint = goAnchor.AddComponent<ConfigurableJoint>();
-        anchorJoint.xMotion = ConfigurableJointMotion.Locked;
-        anchorJoint.yMotion = ConfigurableJointMotion.Locked;
-        anchorJoint.zMotion = ConfigurableJointMotion.Locked;
-        anchorJoint.axis = Vector3.zero;
-        anchorJoint.autoConfigureConnectedAnchor = true;
-        goAnchor.GetComponent<Rigidbody>().useGravity = false;
-        goAnchor.GetComponent<Rigidbody>().drag = 10;
-        goAnchor.GetComponent<Rigidbody>().angularDrag = 10;
-        
-        grabBind = new GameObject("grabAnchor");
-        
         if (grabParentGo == null)
             grabParentGo = transform;
+
+        grabBind = new GameObject("grabBind");
+        grabBind.transform.parent = grabParentGo;
+
+        goAnchor.transform.parent = null;
+        anchorRb = goAnchor.GetComponent<Rigidbody>();
+        anchorJoint = goAnchor.GetComponent<ConfigurableJoint>();
     }
 }
